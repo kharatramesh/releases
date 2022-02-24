@@ -1,23 +1,45 @@
-name: webserver
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
- 
+    branches:
+      - master
+env:
+  DOCKER_USERNAME: kharatramesh
+  REPO: kharatramesh/sample-app
 jobs:
-  build:
+  docker:
     runs-on: ubuntu-latest
     steps:
-    - name: copy files
-      uses: actions/checkout@v2   
-    - name: install webserver  
-      run: | 
-        echo "hello world"
-    - name: setup semantic-release
-      run: npm install -g semantic-release @semantic-release/changelog @semantic-release/commit-analyzer @semantic-release/exec semantic-release/git semantic-release/release-notes-generator
-    - name: release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: echo "hellow world1"
+      - name: checkout
+        uses: actions/checkout@v2
+      
+
+      - name: semantic versioning
+        id: versioning
+        uses: PaulHatch/semantic-version@v4.0.2
+        with:
+          branch: master
+          tag_prefix: "v"
+          major_pattern: "BREAKING CHANGE"
+          minor_pattern: "feat:"
+          format: "v${major}.${minor}.${patch}-prereleases${increment}"
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: build and push
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ${{ env.REPO }}:latest,${{ env.REPO }}.${{steps.versioning.outputs.version }} 
+      - name: create release
+        if: ${{ !startesWith(github.ref, 'refs/tags/') }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.github_token }}
+        with:
+          tag_name: ${{ steps.versioning.outputs.version }}
+          release_name: ${{ steps.versioning.outputs.version }}
+          prerelease: true 
