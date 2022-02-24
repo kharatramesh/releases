@@ -1,0 +1,21 @@
+name: webserver
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+ 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: copy files
+      uses: actions/checkout@v2   
+    - name: install webserver  
+      run: | 
+        sudo apt-update -y
+        sudo apt install apache2 -y
+        sudo systemctl enable --now apahe2
+        sudo mkdir /var/www/test
+        sudo cp index.html /var/www/test
