@@ -15,4 +15,4 @@ jobs:
     - name: install webserver  
       run: | 
         echo "hello world"
-        curl localhost
+      
